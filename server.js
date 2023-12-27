@@ -1,9 +1,7 @@
-const listen_port = 30080;
-const listen_addr = "127.0.0.1";
+const listen_port = 60080;
 
 const fastify = require('fastify')({
-	logger: true,
-	// logger: { level: 'info', file: 'single-sms-batchsend' }
+	logger: { level: 'info', file: '/tmp/web-server.log' }
 });
 
 fastify.register(require('./service/sms_trsfer_service'));
@@ -14,9 +12,7 @@ function err_handle(err, address) {
 	}
 }
 
-fastify.listen(
-	{ port: listen_port, address: listen_addr },
-	function (err, address) {
+fastify.listen({ port: listen_port, host: '0.0.0.0' }, (err, address) => {
 		err_handle(err, address);
 	}
 )
