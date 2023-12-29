@@ -1,5 +1,47 @@
 const mariadb = require('mariadb');
 
+const { Sequelize, DataTypes } = require('sequelize');
+const crypt = require('../utils/encrypt');
+
+const dbName = 'qx_data';
+const mariadbUsername = 'root';
+const mariadbPasswd = 'root';
+
+const sequelize = new Sequelize(dbName, mariadbUsername, mariadbPasswd, {
+	host: '127.0.0.1',
+	dialect: 'mariadb', /* one of 'mysql' | 'postgres' | 'sqlite' | 'mariadb' */
+	username: mariadbUsername,
+	password: mariadbPasswd
+});
+
+const smsDetail = sequelize.define('customer_sms_details', {
+	id:				{ type: DataTypes.BIGINT },
+	customer_id:	{ type: DataTypes.STRING, allowNull: true },
+	company_id:		{ type: DataTypes.STRING, allowNull: true },
+	extend_num:		{ type: DataTypes.STRING },
+	customer_num:	{ type: DataTypes.STRING, allowNull: true },
+	customer_name:	{ type: DataTypes.STRING, allowNull: true },
+	sender:			{ type: DataTypes.BIGINT },
+	phone:			{ type: DataTypes.BIGINT },
+	content:		{ type: DataTypes.BIGINT },
+	balance:		{ type: DataTypes.BIGINT },
+	status:			{ type: DataTypes.BIGINT },
+	send_time:		{ type: DataTypes.BIGINT },
+	uuid:			{ type: DataTypes.STRING, allowNull: true },
+	report_time:	{ type: DataTypes.BIGINT },
+});
+
+async function testSeq() {
+	try {
+		await sequelize.authenticate();
+		console.log('Connection has been established Successfully.');
+	} catch (error) {
+		console.error('Unable to connect to the database:', error);
+	}
+}
+
+/* ========================================================================== */
+
 const database	= 'qx_data';
 const sms_table = 'customer_sms_details';
 
@@ -75,4 +117,5 @@ module.exports = {
 	sms_table,
 	insertSMSRecvFromWeiHu,
 	updateSMSendState,
+	testSeq,
 };

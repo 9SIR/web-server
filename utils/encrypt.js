@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const uuid = require('uuid-random');
 
 /**
  * 生成MD5哈希值
@@ -36,7 +37,7 @@ async function generExtendNum(latestExtend) {
  * 生成一个不带 - 的UUID
  * @returns UUID
  */
-async function generateUUID() {
+function generateUUID() {
 	return uuid().replaceAll('-', '')
 }
 

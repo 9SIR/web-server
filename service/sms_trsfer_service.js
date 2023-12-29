@@ -1,11 +1,14 @@
-const uuid	= require('uuid-random');
 const ret	= require('../common/result_object');
 const db	= require('../tools/mariadb_opt');
+const crypt = require('../utils/encrypt');
 const sms	= require('./third_sms_api');
 // const log = require('../utils/logs');
 
 function singleSMSBatchSendHandle(request, reply) {
-	var ok = sms.singleSMSBatchSend(request.body.phone, request.body.smsContent);
+	// var uid = await crypt.generateUUID();
+	var ok = sms.singleSMSBatchSend(
+		crypt.generateUUID(), request.body.phone, request.body.smsContent, '7777');
+
 	if (ok) {
 		return reply.send(ret.successRetObj());
 	} else {
@@ -14,7 +17,12 @@ function singleSMSBatchSendHandle(request, reply) {
 }
 
 async function smsSendToPeerGroupHandle(request, reply) {
-	return sms.smsSendToPeerGroup();
+	var ok = sms.smsSendToPeerGroup();
+	if (ok) {
+		return reply.send(ret.successRetObj());
+	} else {
+
+	}
 }
 
 /**
@@ -92,7 +100,7 @@ async function routes(fastify, options) {
 	 * 为第三方提供短信转发（相同内容群发至多个手机号）的接口
 	 * 在接收到第三方的短信内容时，立即转发到微呼短信平台
 	 */
-	fastify.post('/sms/weihu/batch', options, async (request, reply) => {
+	fastify.post('/sms/batch-deliver', options, async (request, reply) => {
 		return singleSMSBatchSendHandle(request, reply);
 	});
 
@@ -100,7 +108,7 @@ async function routes(fastify, options) {
 	 * 为第三方提供短信转发（向相同手机号发送多条短信）的接口
 	 * 在接收到第三方的短信内容时，立即转发到微呼短信平台
 	 */
-	fastify.post('/sms/weihu/peer', options, async (request, reply) => {
+	fastify.post('/sms/peer-deliver', options, async (request, reply) => {
 		return smsSendToPeerGroupHandle(request, reply);
 	});
 
@@ -119,8 +127,8 @@ async function routes(fastify, options) {
 	});
 
 	fastify.get('/', options, async (request, reply) => {
-		console.log('Hello, Web Server...');
-		return reply.send({ "status":"OK" });
+		db.testSeq();
+		return reply.send({ "status": "ok" });
 	})
 }
 
