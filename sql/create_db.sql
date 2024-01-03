@@ -1,0 +1,5 @@
+CREATE DATABASE qx_web_server
+WITH
+	ENCODING = 'UTF8'
+	OWNER = postgres
+	CONNECTION LIMIT = 10;
