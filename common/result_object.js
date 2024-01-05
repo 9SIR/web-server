@@ -2,7 +2,7 @@
  * 错误码分类：
  * 1、HTTP 请求相关：HP (HTTP Parameters)
  */
-const retcode = {
+const RET_CODE = {
 	success: 0,
 	phoneEmpty: '',
 }
@@ -12,6 +12,6 @@ function successRetObj(smsSubmitUID) {
 }
 
 module.exports = {
-	retcode,
+	RET_CODE,
 	successRetObj,
 };

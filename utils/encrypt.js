@@ -11,11 +11,12 @@ async function generateMD5(code) {
 
 /**
  * 扩展号总长度
+ * 端口号（8位） + 扩展号（<=12位） = 20位（不超过20位）
  */
-const defTotalBit = 10;
+const defTotalBit = 12;
 
 /**
- * 生成扩展号：0000000001~9999999999
+ * 生成扩展号：000000000001~999999999999
  * 从 1 开始，新的扩展号在旧的扩展号基础上 +1，在前面补零
  * @param {*} latestExtend 最后生成的扩展号
  * @returns 新的扩展号

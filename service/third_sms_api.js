@@ -35,6 +35,7 @@
 const axios		= require('axios');
 const datime	= require('../utils/datetime');
 const encrypt	= require('../utils/encrypt');
+const db		= require('../tools/postgresql_opt');
 
 const appkey		= '600073';
 const appsecret		= 'iNhCPE';
@@ -61,6 +62,18 @@ async function generateSign(key, secret, timestamp) {
 }
 
 /**
+ * 验证 Sign
+ * @param {*} sign
+ * @param {*} appkey
+ * @param {*} appsecret
+ * @param {*} timestamp
+ * @returns true/false
+ */
+function verifiedSign(sign, appkey, appsecret, timestamp) {
+	return sign === encrypt.generateMD5(appkey + appsecret + timestamp);
+}
+
+/**
  * 第三方短信平台接口 Http 请求封装
  * @param {*} url 第三方短信平台接口地址
  * @param {*} data 第三方短信平台接口参数
@@ -68,16 +81,10 @@ async function generateSign(key, secret, timestamp) {
  */
 async function thirdPartAPIRequest(url, data) {
 	axios.default.post(url, data).then(function (response) {
-		console.log(response.data);
-		if (response.data.code === SuccessCode) {
-			return true;
-		} else {
-			console.log(response);
-			return false;
-		}
+		return response;
 	}).catch(function (error) {
 		console.log(error);
-		return false;
+		return { 'code': 'Failed' };
 	})
 }
 
@@ -91,8 +98,22 @@ async function thirdPartAPIRequest(url, data) {
  * @returns {"code": "00000", "desc": "提交成功", "uid": "xxx", "result": [{"status": "00000", "phone": "xxxxxxxxxxx", "desc": "提交成功"}, ...]}
  */
 async function singleSMSBatchSend(uid, phoneNum, msg, extendCode) {
+	var sms = [];
+	var content = {};
+	content.uuid = uid;
+	content.extend_num = extendCode;
+	content.phone = phoneNum;
+	content.content = msg;
+	content.source = 2;
+	content.send_time = datime.getCurLocalTimeString();
+	sms.push(content);
+
+	if (!db.batchInsertSMS(sms)) {
+		console.log('insert sms Failed!!!');
+		return false;
+	}
 	var timestamp = datime.getLocalTimestamp();
-	var sign = await generateSign(appkey, appsecret, timestamp);
+	var sign = generateSign(appkey, appsecret, timestamp);
 	var ret = thirdPartAPIRequest(SingleSMSBatchSendURL, {
 		"uid": uid,
 		"appkey": appkey,
@@ -103,10 +124,10 @@ async function singleSMSBatchSend(uid, phoneNum, msg, extendCode) {
 		"msg": smsHead + msg,
 		"timestamp": timestamp
 	});
-	if (!ret) {
-
+	if (ret.code !== SuccessCode) {
+		return false;
 	}
-	return ret;
+	return true;
 }
 
 /**
@@ -116,8 +137,20 @@ async function singleSMSBatchSend(uid, phoneNum, msg, extendCode) {
  * @returns {"code": "00000","desc":"提交成功","result":[{"status":"00000","phone":"xxxxxxxxxxx","desc":"提交成功","uid":"xxx"}, ...]}
  */
 async function smsSendToPeerGroup(sms) {
+	var smsMap = new Map();
+	sms.forEach(item => {
+		var content = {};
+		content.phone = item.phone;
+		content.content = item.msg;
+		content.source = 2;
+		if (!item.uid || item.uid.length > 32) {
+			item.uuid = encrypt.generateUUID();
+		}
+		smsMap.set(item.phone, content);
+	});
+
 	var timestamp = datime.getLocalTimestamp(); //时间戳（精确到毫秒），5分钟内有效
-	var sign = generateSign(appkey, appsecret, timestamp);
+	var sign = await generateSign(appkey, appsecret, timestamp);
 	var ret = thirdPartAPIRequest(SMSSendToPeerGroupURL, {
 		"appkey": appkey,
 		"appcode": appcode,
@@ -125,10 +158,28 @@ async function smsSendToPeerGroup(sms) {
 		"sms": sms,
 		"timestamp": timestamp
 	});
-	if (!ret) {
-
+	if (!ret || ret.code !== SuccessCode) {
+		return false;
 	}
-	return ret;
+	ret.result.forEach(item => {
+		var content = smsMap.get(item.phone);
+		content.uuid = item.uid;
+		if (item.status === SuccessCode) {
+			content.status = 1;
+		} else {
+			content.status = 2;
+		}
+		smsMap.set(item.phone, content);
+	});
+	var smsAry = [];
+	smsMap.forEach(value => {
+		smsAry.push(value);
+	});
+	console.log('sms array: ', smsAry);
+	if (!db.batchInsertSMS(smsAry)) {
+		return false;
+	}
+	return true;
 }
 
 /**
@@ -148,7 +199,6 @@ async function getSMStateReport(number) {
 		"timestamp": timestamp
 	});
 	if (!ret) {
-
 	}
 	return ret;
 }
@@ -191,7 +241,6 @@ async function querySMSBalance() {
 	if (!ret) {
 
 	}
-
 	return ret;
 }
 
@@ -201,4 +250,5 @@ module.exports = {
 	getSMStateReport,
 	fetchSMSContent,
 	querySMSBalance,
+	verifiedSign,
 };

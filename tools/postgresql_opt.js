@@ -1,3 +1,4 @@
+const pg = require('pg');
 const crypt = require('../utils/encrypt');
 const { Sequelize, DataTypes, NOW } = require('sequelize');
 
@@ -10,6 +11,7 @@ const sequelize = new Sequelize(dbName, postgresUsername, postgresPasswd, {
 	dialect: 'postgres', /* one of 'mysql' | 'postgres' | 'sqlite' | 'mariadb' */
 	username: postgresUsername,
 	password: postgresPasswd,
+	dialectModule: pg,
 	pool: {
 		max: 4, /* Maximum number of connection in pool */
 		min: 0, /* Minimum number of connection in pool */
@@ -35,12 +37,21 @@ const smsDetail = sequelize.define('sms_details', {
 	timestamps: false /* 取消自动添加 createAt 和 updateAt 字段 */
 });
 
+const keySecret = sequelize.define('key_secret', {
+	// id:			{ type: DataTypes.BIGINT, primaryKey:true },		/* 自增主键 */
+	key:		{ type: DataTypes.STRING(255), allowNull: false },		/* AppKey */
+	secret:		{ type: DataTypes.STRING(255), allowNull: false },		/* AppSecret */
+	update_at:	{ type: DataTypes.DATE, defaultValue: DataTypes.NOW },	/* 更新时间 */
+}, {
+	timestamps: false /* 取消自动添加 createAt 和 updateAt 字段 */
+});
+
 /**
  * 往数据库 qx_web_server.sms_details 批量插入数据
  * @param {*} sms [{"", "", "", ...}, {"", "", "", ...}, ...]
  * @returns
  */
-async function insertSMSRecvFromWeiHu(smsObjs) {
+async function batchInsertSMS(smsObjs) {
 	try {
 		await sequelize.transaction(async (t) => {
 			await smsDetail.bulkCreate(smsObjs, { transaction: t })
@@ -58,7 +69,7 @@ async function insertSMSRecvFromWeiHu(smsObjs) {
  * @param {*} updateFields ["updateOnField1", "updateOnField2", ...]
  * @returns
  */
-async function updateSMSendStateFromWeiHu(updateObjs) {
+async function batchUpdateSMSFields(updateObjs) {
 	console.log(updateObjs);
 	try {
 		await sequelize.transaction(async (t) => {
@@ -77,7 +88,12 @@ async function updateSMSendStateFromWeiHu(updateObjs) {
 	}
 }
 
+async function getSecretByAppKey(appkey) {
+	return keySecret.findOne({ attributes: ['secret'], where: { key: appkey } })
+}
+
 module.exports = {
-	insertSMSRecvFromWeiHu,
-	updateSMSendStateFromWeiHu,
+	batchInsertSMS,
+	batchUpdateSMSFields,
+	getSecretByAppKey,
 };

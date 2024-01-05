@@ -6,7 +6,7 @@ CREATE TABLE sms_details (
 	customer_num VARCHAR(255) DEFAULT '',
 	extend_num VARCHAR(50) DEFAULT '',
 	area_code VARCHAR(50) DEFAULT '+86',
-	phone VARCHAR(50) NOT NULL CHECK (phone <> ''),
+	phone TEXT NOT NULL CHECK (phone <> ''),
 	content TEXT NOT NULL CHECK (content <> ''),
 	balance INT CHECK (balance >= 0),
 	source SMALLINT NOT NULL CHECK (status >= 0),
@@ -27,7 +27,7 @@ COMMENT ON COLUMN sms_details.uuid is '短信唯一标识';
 COMMENT ON COLUMN sms_details.customer_num is '客户编号';
 COMMENT ON COLUMN sms_details.extend_num is '扩展号';
 COMMENT ON COLUMN sms_details.area_code is '手机号码区号';
-COMMENT ON COLUMN sms_details.phone is '手机号码';
+COMMENT ON COLUMN sms_details.phone is '手机号码，多个号码用逗号隔开,最多不超过1000个号码';
 COMMENT ON COLUMN sms_details.content is '短信内容';
 COMMENT ON COLUMN sms_details.balance is '短信余额（剩余条数）';
 COMMENT ON COLUMN sms_details.source is '短信来源，1--接收，2--系统发送';

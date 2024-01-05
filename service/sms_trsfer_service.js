@@ -6,21 +6,33 @@ const sms	= require('./third_sms_api');
 
 function singleSMSBatchSendHandle(request, reply) {
 	var ok = sms.singleSMSBatchSend(
-		crypt.generateUUID(), request.body.phone, request.body.smsContent, '7777'
+		crypt.generateUUID(), request.body.phone, request.body.smsContent, ''
 	);
 	if (ok) {
 		return reply.send(ret.successRetObj());
 	} else {
-
+		console.log('');
+		return reply.send({ 'status': 'Failed' });
 	}
 }
 
 async function smsSendToPeerGroupHandle(request, reply) {
-	var ok = sms.smsSendToPeerGroup();
+	var sign = request.body.sign;
+	var appkey = request.body.appkey;
+	var timestamp = request.body.timestamp;
+	// var secret = db.getSecretByAppKey(appkey);
+	// if (!secret) {
+	// 	return reply.send({ 'status': 'Failed' });
+	// }
+	// if (!sms.verifiedSign(sign, appkey, secret, timestamp)) {
+	// 	return reply.send({ 'status': 'Failed' });
+	// }
+	var ok = sms.smsSendToPeerGroup(request.body.sms);
 	if (ok) {
 		return reply.send(ret.successRetObj());
 	} else {
-
+		console.log('');
+		return reply.send({ 'status': 'Failed' });
 	}
 }
 
@@ -44,7 +56,7 @@ async function receiveSMSContent(request, reply) {
 		content.send_time = sms[idx].deliver_time;
 		data.push(content);
 	}
-	if (await db.insertSMSRecvFromWeiHu(data)) {
+	if (await db.batchInsertSMS(data)) {
 		return reply.send({ "code": "00000" }) //接收成功需返回{"code":"00000"}，返回其它值视为接收异常，会尝试最多推送三次
 	} else {
 		return reply.send({ "code": 'Failed' }) //TODO
@@ -68,11 +80,11 @@ async function receiveStateReport(request, reply) {
 		if (smstate[idx].status == 0) {
 			obj.status = 1; //发送成功
 		} else {
-			obj.status = 2; //发送失败
+			obj.status = 2; //发送失败，需要再次发送
 		}
 		updateObjs.push(obj);
 	}
-	if (await db.updateSMSendStateFromWeiHu(updateObjs)) {
+	if (await db.batchUpdateSMSFields(updateObjs)) {
 		return reply.send({ "code": "00000" }) //接收成功需返回{"code":"00000"}，返回其它值视为接收异常，会尝试最多推送三次
 	} else {
 		return reply.send({ "code": 'Failed' }) //TODO
@@ -94,7 +106,7 @@ async function routes(fastify, options) {
 	});
 
 	/**
-	 * 为第三方提供短信转发（向相同手机号发送多条短信）的接口
+	 * 为第三方提供短信转发（一对一内容群发多条短信）的接口
 	 * 在接收到第三方的短信内容时，立即转发到微呼短信平台
 	 */
 	fastify.post('/sms/peer-deliver', options, async (request, reply) => {
