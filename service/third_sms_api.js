@@ -113,7 +113,7 @@ async function singleSMSBatchSend(uid, phoneNum, msg, extendCode) {
 		return false;
 	}
 	var timestamp = datime.getLocalTimestamp();
-	var sign = generateSign(appkey, appsecret, timestamp);
+	var sign = await generateSign(appkey, appsecret, timestamp);
 	var ret = thirdPartAPIRequest(SingleSMSBatchSendURL, {
 		"uid": uid,
 		"appkey": appkey,
@@ -158,19 +158,19 @@ async function smsSendToPeerGroup(sms) {
 		"sms": sms,
 		"timestamp": timestamp
 	});
-	if (!ret || ret.code !== SuccessCode) {
-		return false;
-	}
-	ret.result.forEach(item => {
-		var content = smsMap.get(item.phone);
-		content.uuid = item.uid;
-		if (item.status === SuccessCode) {
-			content.status = 1;
-		} else {
-			content.status = 2;
-		}
-		smsMap.set(item.phone, content);
-	});
+	// if (!ret || ret.code !== SuccessCode) {
+	// 	return false;
+	// }
+	// ret.result.forEach(item => {
+	// 	var content = smsMap.get(item.phone);
+	// 	content.uuid = item.uid;
+	// 	if (item.status === SuccessCode) {
+	// 		content.status = 1;
+	// 	} else {
+	// 		content.status = 2;
+	// 	}
+	// 	smsMap.set(item.phone, content);
+	// });
 	var smsAry = [];
 	smsMap.forEach(value => {
 		smsAry.push(value);

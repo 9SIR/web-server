@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS sms_details; /* 如果表存在则删除 */
 
 CREATE TABLE sms_details (
 	id serial PRIMARY KEY,
-	uuid VARCHAR(50) NOT NULL,
+	uuid VARCHAR(50),
 	customer_num VARCHAR(255) DEFAULT '',
 	extend_num VARCHAR(50) DEFAULT '',
 	area_code VARCHAR(50) DEFAULT '+86',
